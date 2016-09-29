@@ -1,0 +1,15 @@
+{
+  "name": "doggo_bot",
+  "description": "Doggo's Telegram bot",
+  "author": "Antonio <ant.ruggiero16@gmail.com>",
+  "private": true,
+  "scripts": {
+    "server": "node server.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.15.2",
+    "mongoose": "^4.6.0",
+    "node-telegram-bot-api": "^0.23.3",
+    "shuffle-array": "^1.0.0"
+  }
+}
