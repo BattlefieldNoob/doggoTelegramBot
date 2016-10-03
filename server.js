@@ -19,7 +19,7 @@ var token = "295281027:AAFYHVXFCAdJ5MNgIH-09-WVDKaNSujL-LU"
 
 var bot = new Telegram(token, { polling: true })
 log.debug("Server is up!");
-
+console.log("Server is up!");
 
 var doggo_ids = []
 
@@ -108,12 +108,15 @@ var showdoggo = function (msg) {
   shuffle(doggo_ids)
   votetable[msg.chat.id] = { doggo_id: doggo_ids[0].file_id }
   var replyKeyboard = JSON.stringify({ "keyboard": [["\u{1F44D}"], ["\u{1F44E}"], ["/another"], ["/mainMenu"]] })
+  Entry.findOne({ file_id: votetable[msg.chat.id].doggo_id }).exec(function(err,doc){
   bot.sendPhoto(msg.chat.id, doggo_ids[0].file_id, {
+    caption:"Votes:"+doc.vote,
     parse_mode: "Markdown",
     reply_markup: replyKeyboard
   }).then(message => {
     log.debug(message);
   })
+})
 }
 
 bot.onText(/\/uploadDoggo/, function (msg, match) {
@@ -186,7 +189,7 @@ bot.onText(/\/topdoggo/, function (msg, match) {
   log.debug("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Requested top image");
   Entry.findOne({}).sort("-vote").exec(function (err, value) {
     log.debug(value);
-    bot.sendPhoto(msg.chat.id, value.file_id).then(message => {
+    bot.sendPhoto(msg.chat.id, value.file_id, {caption:"Top with "+value.vote+" votes"}).then(message => {
       log.debug(message);
     })
   })
