@@ -10,7 +10,7 @@ var shuffle = require('shuffle-array')
 var Telegram = require("node-telegram-bot-api")
 var mongoose = require('mongoose');
 var fs = require('fs');
-var Log = require('log'), log = new Log('debug', fs.createWriteStream('my.log'));
+var Log = require('log'), log = new Log('debug', fs.createWriteStream('my.log')), hits= new Log('debug', fs.createWriteStream('hits.log'));
 mongoose.connect('mongodb://aruggiero16:726915casa@ds025180.mlab.com:25180/prankusers')
 
 var Entry = mongoose.model('photos', { name: String, file_id: String, vote: Number });
@@ -27,7 +27,9 @@ var votetable = {}
 
 var uploadtable = []
 
-var replyKeyboardMain = JSON.stringify({ "keyboard": [["/showdoggo"], ["/topdoggo"], ["/uploadDoggo"], ["/donate"]] })
+var advicestable = []
+
+var replyKeyboardMain = JSON.stringify({ "keyboard": [["/showdoggo"], ["/topdoggo"], ["/uploadDoggo"], ["/donate","/advices"]] })
 
 class Photo {
   constructor(name, file_id) {
@@ -44,6 +46,7 @@ Entry.find({}, function (err, photos) {
 
 bot.on("message", function (msg) {
   log.debug(msg);
+  if(msg.text!="/cancel"){
   if (msg.text == "\u{01F44D}") {
     if (msg.chat.id in votetable) {//mi aspetto la votazione
       Entry.update({ file_id: votetable[msg.chat.id].doggo_id }, { $inc: { vote: 1 } }, function (err, affected) {
@@ -51,7 +54,7 @@ bot.on("message", function (msg) {
         //log.debug(affected);
         log.debug("vote increased");
         delete votetable[msg.chat.id]
-        log.debug(votetable)
+        console.log(votetable)
         showdoggo(msg)
       })
     }
@@ -62,11 +65,22 @@ bot.on("message", function (msg) {
         //log.debug(affected);
         log.debug("vote decreased");
         delete votetable[msg.chat.id]
-        log.debug(votetable)
+        console.log(votetable)
         showdoggo(msg)
       })
     }
+  } else {
+    if (advicestable.indexOf(msg.chat.id)!=-1){
+        hits.info("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Wrote an hint:"+msg.text));
+        console.log("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Wrote an hint:"+msg.text);
+        delete advicestable[advicestable.indexOf(msg.chat.id)]
+        bot.sendMessage(msg.chat.id, "Thank You!", {
+          parse_mode: "Markdown",
+          reply_markup: replyKeyboardMain
+        })
+    }
   }
+}
 })
 
 bot.onText(/\/start/, function (msg) {
@@ -77,6 +91,19 @@ bot.onText(/\/start/, function (msg) {
     log.debug(msg);
   })
   log.debug("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Started Bot");
+})
+
+
+bot.onText(/\/advices/, function (msg) {
+  bot.sendMessage(msg.chat.id, "Something wrong? or just an hint? Write here what you think about my job!", {
+    parse_mode: "Markdown",
+    reply_markup: JSON.stringify({ "keyboard": [["/cancel"]] })
+  }).then(msg => {
+    log.debug(msg);
+  })
+  advicestable.push(msg.chat.id)
+  console.log(advicestable);
+  log.debug("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Want to write an hint");
 })
 
 
@@ -96,7 +123,7 @@ bot.on("photo", function (msg) {
       }
     });
     delete uploadtable[uploadtable.indexOf(msg.chat.id)]
-    log.debug(uploadtable);
+    console.log(uploadtable);
     bot.sendMessage(msg.chat.id, "Saved!", {
       parse_mode: "Markdown",
       reply_markup: replyKeyboardMain
@@ -114,7 +141,7 @@ var showdoggo = function (msg) {
     parse_mode: "Markdown",
     reply_markup: replyKeyboard
   }).then(message => {
-    log.debug(message);
+    console.log(message);
   })
 })
 }
@@ -126,14 +153,21 @@ bot.onText(/\/uploadDoggo/, function (msg, match) {
     reply_markup: JSON.stringify({ "keyboard": [["/cancel"]] })
   })
   uploadtable.push(msg.chat.id)
-  log.debug(uploadtable);
+  console.log(uploadtable);
 })
 
 
 bot.onText(/\/cancel/, function (msg, match) {
   if (uploadtable.indexOf(msg.chat.id) != -1) {
     delete uploadtable[uploadtable.indexOf(msg.chat.id)]
-    log.debug(uploadtable);
+    console.log(uploadtable);
+    bot.sendMessage(msg.chat.id, "Ok!", {
+      parse_mode: "Markdown",
+      reply_markup: replyKeyboardMain
+    })
+  } else if (advicestable.indexOf(msg.chat.id)!=-1) {
+    delete advicestable[advicestable.indexOf(msg.chat.id)]
+    console.log(advicestable);
     bot.sendMessage(msg.chat.id, "Ok!", {
       parse_mode: "Markdown",
       reply_markup: replyKeyboardMain
