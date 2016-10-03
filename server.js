@@ -120,7 +120,7 @@ var showdoggo = function (msg) {
 }
 
 bot.onText(/\/uploadDoggo/, function (msg, match) {
-  log.debug("User " + message.from.id + " (" + message.from.first_name + " " + message.from.last_name + ") want to upload an image");
+  log.debug("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") want to upload an image");
   bot.sendMessage(msg.chat.id, "Send me an image of your doggo", {
     parse_mode: "Markdown",
     reply_markup: JSON.stringify({ "keyboard": [["/cancel"]] })
