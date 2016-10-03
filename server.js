@@ -18,7 +18,7 @@ var Entry = mongoose.model('photos', { name: String, file_id: String, vote: Numb
 var token = "295281027:AAFYHVXFCAdJ5MNgIH-09-WVDKaNSujL-LU"
 
 var bot = new Telegram(token, { polling: true })
-
+log.debug("Server is up!");
 
 
 var doggo_ids = []
@@ -69,20 +69,20 @@ bot.on("message", function (msg) {
   }
 })
 
-bot.onText(/\/start/, function (message) {
-  bot.sendMessage(message.chat.id, "Welcome!", {
+bot.onText(/\/start/, function (msg) {
+  bot.sendMessage(msg.chat.id, "Welcome!", {
     parse_mode: "Markdown",
     reply_markup: replyKeyboardMain
-  }).then(message => {
-    log.debug(message);
+  }).then(msg => {
+    log.debug(msg);
   })
-  log.debug("User " + message.from.id + " (" + message.from.first_name + " " + message.form.last_name + ") Started Bot");
+  log.debug("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Started Bot");
 })
 
 
 
 bot.on("photo", function (msg) {
-  log.debug("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.form.last_name + ") Uploaded an image");
+  log.debug("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Uploaded an image");
   log.debug(uploadtable)
   if (uploadtable.indexOf(msg.chat.id) != -1) {
     doggo_ids.push(new Photo(msg.from.first_name, msg.photo[msg.photo.length - 1].file_id))
@@ -117,7 +117,7 @@ var showdoggo = function (msg) {
 }
 
 bot.onText(/\/uploadDoggo/, function (msg, match) {
-  log.debug("User " + message.from.id + " (" + message.from.first_name + " " + message.form.last_name + ") want to upload an image");
+  log.debug("User " + message.from.id + " (" + message.from.first_name + " " + message.from.last_name + ") want to upload an image");
   bot.sendMessage(msg.chat.id, "Send me an image of your doggo", {
     parse_mode: "Markdown",
     reply_markup: JSON.stringify({ "keyboard": [["/cancel"]] })
@@ -139,7 +139,7 @@ bot.onText(/\/cancel/, function (msg, match) {
 })
 
 bot.onText(/\/showdoggo/, function (msg, match) {
-  log.debug("User " + message.from.id + " (" + message.from.first_name + " " + message.form.last_name + ") Requested an image");
+  log.debug("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Requested an image");
   showdoggo(msg)
 })
 
@@ -183,7 +183,7 @@ bot.onText(/\/mainMenu/, function (msg, match) {
 })
 
 bot.onText(/\/topdoggo/, function (msg, match) {
-  log.debug("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.form.last_name + ") Requested top image");
+  log.debug("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Requested top image");
   Entry.findOne({}).sort("-vote").exec(function (err, value) {
     log.debug(value);
     bot.sendPhoto(msg.chat.id, value.file_id).then(message => {
