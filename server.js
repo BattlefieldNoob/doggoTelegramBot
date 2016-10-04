@@ -71,7 +71,7 @@ bot.on("message", function (msg) {
     }
   } else {
     if (advicestable.indexOf(msg.chat.id)!=-1){
-        hits.info("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Wrote an hint:"+msg.text));
+        hits.info("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Wrote an hint:"+msg.text);
         console.log("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Wrote an hint:"+msg.text);
         delete advicestable[advicestable.indexOf(msg.chat.id)]
         bot.sendMessage(msg.chat.id, "Thank You!", {
