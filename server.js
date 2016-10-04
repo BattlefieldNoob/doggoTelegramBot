@@ -10,7 +10,7 @@ var shuffle = require('shuffle-array')
 var Telegram = require("node-telegram-bot-api")
 var mongoose = require('mongoose');
 var fs = require('fs');
-var Log = require('log'), log = new Log('debug', fs.createWriteStream('my.log')), hits= new Log('debug', fs.createWriteStream('hits.log'));
+var Log = require('log'), log = new Log('debug', fs.createWriteStream('my.log')), hits= new Log('debug', fs.createWriteStream('hints.log'));
 mongoose.connect('mongodb://aruggiero16:726915casa@ds025180.mlab.com:25180/prankusers')
 
 var Entry = mongoose.model('photos', { name: String, file_id: String, vote: Number });
@@ -20,6 +20,8 @@ var token = "295281027:AAFYHVXFCAdJ5MNgIH-09-WVDKaNSujL-LU"
 var bot = new Telegram(token, { polling: true })
 log.debug("Server is up!");
 console.log("Server is up!");
+
+var myID=67447150;
 
 var doggo_ids = []
 
@@ -45,7 +47,7 @@ Entry.find({}, function (err, photos) {
 })
 
 bot.on("message", function (msg) {
-  log.debug(msg);
+  log.debug("Message :"+msg.text);
   if(msg.text!="/cancel"){
   if (msg.text == "\u{01F44D}") {
     if (msg.chat.id in votetable) {//mi aspetto la votazione
@@ -87,8 +89,6 @@ bot.onText(/\/start/, function (msg) {
   bot.sendMessage(msg.chat.id, "Welcome!", {
     parse_mode: "Markdown",
     reply_markup: replyKeyboardMain
-  }).then(msg => {
-    log.debug(msg);
   })
   log.debug("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Started Bot");
 })
@@ -98,8 +98,6 @@ bot.onText(/\/advices/, function (msg) {
   bot.sendMessage(msg.chat.id, "Something wrong? or just an hint? Write here what you think about my job!", {
     parse_mode: "Markdown",
     reply_markup: JSON.stringify({ "keyboard": [["/cancel"]] })
-  }).then(msg => {
-    log.debug(msg);
   })
   advicestable.push(msg.chat.id)
   console.log(advicestable);
@@ -110,7 +108,7 @@ bot.onText(/\/advices/, function (msg) {
 
 bot.on("photo", function (msg) {
   log.debug("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Uploaded an image");
-  log.debug(uploadtable)
+  console.log(uploadtable)
   if (uploadtable.indexOf(msg.chat.id) != -1) {
     doggo_ids.push(new Photo(msg.from.first_name, msg.photo[msg.photo.length - 1].file_id))
     log.debug("file_id="+msg.photo[msg.photo.length - 1].file_id);
@@ -120,6 +118,9 @@ bot.on("photo", function (msg) {
         log.debug("errore");
       } else {
         log.debug('meow');
+        bot.sendPhoto(myID, msg.photo[msg.photo.length - 1].file_id, {
+          caption:"From " + msg.from.id + " (" + msg.from.first_name + ")"
+        })
       }
     });
     delete uploadtable[uploadtable.indexOf(msg.chat.id)]
@@ -187,7 +188,7 @@ bot.onText(/\\u{01F44D}/, function (msg, match) {
       //log.debug(affected);
       log.debug("vote increased");
       delete votetable[msg.chat.id]
-      log.debug(votetable)
+      console.log(votetable)
       showdoggo(msg)
     })
   }
@@ -200,7 +201,7 @@ bot.onText(/\/thumbDown/, function (msg, match) {
       //log.debug(affected);
       log.debug("vote decreased");
       delete votetable[msg.chat.id]
-      log.debug(votetable)
+      console.log(votetable)
       showdoggo(msg)
     })
   }
@@ -223,9 +224,7 @@ bot.onText(/\/topdoggo/, function (msg, match) {
   log.debug("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Requested top image");
   Entry.findOne({}).sort("-vote").exec(function (err, value) {
     log.debug(value);
-    bot.sendPhoto(msg.chat.id, value.file_id, {caption:"Top with "+value.vote+" votes"}).then(message => {
-      log.debug(message);
-    })
+    bot.sendPhoto(msg.chat.id, value.file_id, {caption:"Top with "+value.vote+" votes"})
   })
 })
 
