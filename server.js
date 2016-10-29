@@ -1,8 +1,3 @@
-//
-// # SimpleServer
-//
-// A simple chat server using Socket.IO, Express, and Async.
-//
 
 'use strict'
 var shuffle = require('shuffle-array')
@@ -10,7 +5,8 @@ var shuffle = require('shuffle-array')
 var Telegram = require("node-telegram-bot-api")
 var mongoose = require('mongoose');
 var fs = require('fs');
-var Log = require('log'), log = new Log('debug', fs.createWriteStream('my.log')), hits= new Log('debug', fs.createWriteStream('hints.log'));
+var currentDateTime=new Date().toISOString();
+var Log = require('log'), log = new Log('debug', fs.createWriteStream('log-'+currentDateTime+'.log')), hits= new Log('debug', fs.createWriteStream('hints-'+currentDateTime+'.log'));
 mongoose.connect('mongodb://aruggiero16:726915casa@ds025180.mlab.com:25180/prankusers')
 
 var Entry = mongoose.model('photos', { name: String, file_id: String, vote: Number });
@@ -40,11 +36,23 @@ class Photo {
   }
 }
 
+var sendMessageToMe=function(message){
+  bot.sendMessage(myID, "LOG MESSAGE:"+message)
+}
+
 Entry.find({}, function (err, photos) {
   photos.forEach(function (elem) {
     doggo_ids.push(new Photo(elem.name, elem.file_id))
   })
 })
+
+
+process.on("uncaughtException", function(err){
+  sendMessageToMe("Server Down!")
+  sendMessageToMe(err)
+})
+
+
 
 bot.on("message", function (msg) {
   log.debug("Message :"+msg.text);
@@ -58,6 +66,7 @@ bot.on("message", function (msg) {
         delete votetable[msg.chat.id]
         console.log(votetable)
         showdoggo(msg)
+        sendMessageToMe("user "+msg.from.first_name+" increased vote to image "+votetable[msg.chat.id].doggo_id)
       })
     }
   } else if (msg.text == "\u{01F44E}") {
@@ -69,6 +78,7 @@ bot.on("message", function (msg) {
         delete votetable[msg.chat.id]
         console.log(votetable)
         showdoggo(msg)
+        sendMessageToMe("user "+msg.from.first_name+" decreased vote to image "+votetable[msg.chat.id].doggo_id)
       })
     }
   } else {
@@ -76,6 +86,7 @@ bot.on("message", function (msg) {
         hits.info("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Wrote an hint:"+msg.text);
         console.log("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Wrote an hint:"+msg.text);
         delete advicestable[advicestable.indexOf(msg.chat.id)]
+        sendMessageToMe("user "+msg.from.first_name+" sent a hint")
         bot.sendMessage(msg.chat.id, "Thank You!", {
           parse_mode: "Markdown",
           reply_markup: replyKeyboardMain
@@ -90,6 +101,7 @@ bot.onText(/\/start/, function (msg) {
     parse_mode: "Markdown",
     reply_markup: replyKeyboardMain
   })
+  sendMessageToMe("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Started Bot")
   log.debug("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Started Bot");
 })
 
@@ -143,6 +155,7 @@ var showdoggo = function (msg) {
     reply_markup: replyKeyboard
   }).then(message => {
     console.log(message);
+    sendMessageToMe("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Requested an image")
   })
 })
 }
@@ -221,6 +234,7 @@ bot.onText(/\/mainMenu/, function (msg, match) {
 })
 
 bot.onText(/\/topdoggo/, function (msg, match) {
+  sendMessageToMe("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Requested top image")
   log.debug("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Requested top image");
   Entry.findOne({}).sort("-vote").exec(function (err, value) {
     log.debug(value);
