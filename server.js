@@ -58,36 +58,36 @@ bot.on("message", function (msg) {
   log.debug("Message :"+msg.text);
   if(msg.text!="/cancel"){
   if (msg.text == "\u{01F44D}") {
-    if (msg.chat.id in votetable) {//mi aspetto la votazione
-      Entry.update({ file_id: votetable[msg.chat.id].doggo_id }, { $inc: { vote: 1 } }, function (err, affected) {
+    if (msg.from.id in votetable) {//mi aspetto la votazione
+      Entry.update({ file_id: votetable[msg.from.id].doggo_id }, { $inc: { vote: 1 } }, function (err, affected) {
         //log.debug(err);
         //log.debug(affected);
         log.debug("vote increased");
-        delete votetable[msg.chat.id]
+        delete votetable[msg.from.id]
         console.log(votetable)
         showdoggo(msg)
-        sendMessageToMe("user "+msg.from.first_name+" increased vote to image "+votetable[msg.chat.id].doggo_id)
+        sendMessageToMe("user "+msg.from.first_name+" increased vote to image "+votetable[msg.from.id].doggo_id)
       })
     }
   } else if (msg.text == "\u{01F44E}") {
-    if (msg.chat.id in votetable) {//mi aspetto la votazione
-      Entry.update({ file_id: votetable[msg.chat.id].doggo_id }, { $inc: { vote: -1 } }, function (err, affected) {
+    if (msg.from.id in votetable) {//mi aspetto la votazione
+      Entry.update({ file_id: votetable[msg.from.id].doggo_id }, { $inc: { vote: -1 } }, function (err, affected) {
         //log.debug(err);
         //log.debug(affected);
         log.debug("vote decreased");
-        delete votetable[msg.chat.id]
+        delete votetable[msg.from.id]
         console.log(votetable)
         showdoggo(msg)
-        sendMessageToMe("user "+msg.from.first_name+" decreased vote to image "+votetable[msg.chat.id].doggo_id)
+        sendMessageToMe("user "+msg.from.first_name+" decreased vote to image "+votetable[msg.from.id].doggo_id)
       })
     }
   } else {
-    if (advicestable.indexOf(msg.chat.id)!=-1){
+    if (advicestable.indexOf(msg.from.id)!=-1){
         hits.info("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Wrote an hint:"+msg.text);
         console.log("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Wrote an hint:"+msg.text);
-        delete advicestable[advicestable.indexOf(msg.chat.id)]
+        delete advicestable[advicestable.indexOf(msg.from.id)]
         sendMessageToMe("user "+msg.from.first_name+" sent a hint")
-        bot.sendMessage(msg.chat.id, "Thank You!", {
+        bot.sendMessage(msg.from.id, "Thank You!", {
           parse_mode: "Markdown",
           reply_markup: replyKeyboardMain
         })
@@ -97,7 +97,7 @@ bot.on("message", function (msg) {
 })
 
 bot.onText(/\/start/, function (msg) {
-  bot.sendMessage(msg.chat.id, "Welcome!", {
+  bot.sendMessage(msg.from.id, "Welcome!", {
     parse_mode: "Markdown",
     reply_markup: replyKeyboardMain
   })
@@ -107,11 +107,11 @@ bot.onText(/\/start/, function (msg) {
 
 
 bot.onText(/\/advices/, function (msg) {
-  bot.sendMessage(msg.chat.id, "Something wrong? or just an hint? Write here what you think about my job!", {
+  bot.sendMessage(msg.from.id, "Something wrong? or just an hint? Write here what you think about my job!", {
     parse_mode: "Markdown",
     reply_markup: JSON.stringify({ "keyboard": [["/cancel"]] })
   })
-  advicestable.push(msg.chat.id)
+  advicestable.push(msg.from.id)
   console.log(advicestable);
   log.debug("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Want to write an hint");
 })
@@ -121,7 +121,7 @@ bot.onText(/\/advices/, function (msg) {
 bot.on("photo", function (msg) {
   log.debug("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Uploaded an image");
   console.log(uploadtable)
-  if (uploadtable.indexOf(msg.chat.id) != -1) {
+  if (uploadtable.indexOf(msg.from.id) != -1) {
     doggo_ids.push(new Photo(msg.from.first_name, msg.photo[msg.photo.length - 1].file_id))
     log.debug("file_id="+msg.photo[msg.photo.length - 1].file_id);
     var doggo = new Entry({ name: msg.from.first_name, file_id: msg.photo[msg.photo.length - 1].file_id, vote: 0 });
@@ -135,9 +135,9 @@ bot.on("photo", function (msg) {
         })
       }
     });
-    delete uploadtable[uploadtable.indexOf(msg.chat.id)]
+    delete uploadtable[uploadtable.indexOf(msg.from.id)]
     console.log(uploadtable);
-    bot.sendMessage(msg.chat.id, "Saved!", {
+    bot.sendMessage(msg.from.id, "Saved!", {
       parse_mode: "Markdown",
       reply_markup: replyKeyboardMain
     })
@@ -146,10 +146,10 @@ bot.on("photo", function (msg) {
 
 var showdoggo = function (msg) {
   shuffle(doggo_ids)
-  votetable[msg.chat.id] = { doggo_id: doggo_ids[0].file_id }
+  votetable[msg.from.id] = { doggo_id: doggo_ids[0].file_id }
   var replyKeyboard = JSON.stringify({ "keyboard": [["\u{1F44D}"], ["\u{1F44E}"], ["/another"], ["/mainMenu"]] })
-  Entry.findOne({ file_id: votetable[msg.chat.id].doggo_id }).exec(function(err,doc){
-  bot.sendPhoto(msg.chat.id, doggo_ids[0].file_id, {
+  Entry.findOne({ file_id: votetable[msg.from.id].doggo_id }).exec(function(err,doc){
+  bot.sendPhoto(msg.from.id, doggo_ids[0].file_id, {
     caption:"Votes:"+doc.vote,
     parse_mode: "Markdown",
     reply_markup: replyKeyboard
@@ -162,27 +162,27 @@ var showdoggo = function (msg) {
 
 bot.onText(/\/uploadDoggo/, function (msg, match) {
   log.debug("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") want to upload an image");
-  bot.sendMessage(msg.chat.id, "Send me an image of your doggo", {
+  bot.sendMessage(msg.from.id, "Send me an image of your doggo", {
     parse_mode: "Markdown",
     reply_markup: JSON.stringify({ "keyboard": [["/cancel"]] })
   })
-  uploadtable.push(msg.chat.id)
+  uploadtable.push(msg.from.id)
   console.log(uploadtable);
 })
 
 
 bot.onText(/\/cancel/, function (msg, match) {
-  if (uploadtable.indexOf(msg.chat.id) != -1) {
-    delete uploadtable[uploadtable.indexOf(msg.chat.id)]
+  if (uploadtable.indexOf(msg.from.id) != -1) {
+    delete uploadtable[uploadtable.indexOf(msg.from.id)]
     console.log(uploadtable);
-    bot.sendMessage(msg.chat.id, "Ok!", {
+    bot.sendMessage(msg.from.id, "Ok!", {
       parse_mode: "Markdown",
       reply_markup: replyKeyboardMain
     })
-  } else if (advicestable.indexOf(msg.chat.id)!=-1) {
-    delete advicestable[advicestable.indexOf(msg.chat.id)]
+  } else if (advicestable.indexOf(msg.from.id)!=-1) {
+    delete advicestable[advicestable.indexOf(msg.from.id)]
     console.log(advicestable);
-    bot.sendMessage(msg.chat.id, "Ok!", {
+    bot.sendMessage(msg.from.id, "Ok!", {
       parse_mode: "Markdown",
       reply_markup: replyKeyboardMain
     })
@@ -195,12 +195,12 @@ bot.onText(/\/showdoggo/, function (msg, match) {
 })
 
 bot.onText(/\\u{01F44D}/, function (msg, match) {
-  if (msg.chat.id in votetable) {//mi aspetto la votazione
-    Entry.update({ file_id: votetable[msg.chat.id].doggo_id }, { $inc: { vote: 1 } }, function (err, affected) {
+  if (msg.from.id in votetable) {//mi aspetto la votazione
+    Entry.update({ file_id: votetable[msg.from.id].doggo_id }, { $inc: { vote: 1 } }, function (err, affected) {
       //log.debug(err);
       //log.debug(affected);
       log.debug("vote increased");
-      delete votetable[msg.chat.id]
+      delete votetable[msg.from.id]
       console.log(votetable)
       showdoggo(msg)
     })
@@ -208,12 +208,12 @@ bot.onText(/\\u{01F44D}/, function (msg, match) {
 })
 
 bot.onText(/\/thumbDown/, function (msg, match) {
-  if (msg.chat.id in votetable) {//mi aspetto la votazione
-    Entry.update({ file_id: votetable[msg.chat.id].doggo_id }, { $inc: { vote: -1 } }, function (err, affected) {
+  if (msg.from.id in votetable) {//mi aspetto la votazione
+    Entry.update({ file_id: votetable[msg.from.id].doggo_id }, { $inc: { vote: -1 } }, function (err, affected) {
       //log.debug(err);
       //log.debug(affected);
       log.debug("vote decreased");
-      delete votetable[msg.chat.id]
+      delete votetable[msg.from.id]
       console.log(votetable)
       showdoggo(msg)
     })
@@ -225,7 +225,7 @@ bot.onText(/\/another/, function (msg, match) {
 })
 
 bot.onText(/\/mainMenu/, function (msg, match) {
-  bot.sendMessage(msg.chat.id, "Back to Main Menu", {
+  bot.sendMessage(msg.from.id, "Back to Main Menu", {
     parse_mode: "Markdown",
     reply_markup: replyKeyboardMain
   }).then(message => {
@@ -238,10 +238,10 @@ bot.onText(/\/topdoggo/, function (msg, match) {
   log.debug("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Requested top image");
   Entry.findOne({}).sort("-vote").exec(function (err, value) {
     log.debug(value);
-    bot.sendPhoto(msg.chat.id, value.file_id, {caption:"Top with "+value.vote+" votes"})
+    bot.sendPhoto(msg.from.id, value.file_id, {caption:"Top with "+value.vote+" votes"})
   })
 })
 
 bot.onText(/\/donate/, function (msg, match) {
-  bot.sendMessage(msg.chat.id, "Thank You! https://www.paypal.me/Ruggiero26/0.50")
+  bot.sendMessage(msg.from.id, "Thank You! https://www.paypal.me/Ruggiero26/0.50")
 })
