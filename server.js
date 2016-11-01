@@ -1,5 +1,12 @@
 
-"use strict";
+'use strict' 
+var shuffle = require('shuffle-array') 
+ 
+var Telegram = require("node-telegram-bot-api") 
+var mongoose = require('mongoose'); 
+var fs = require('fs'); 
+var currentDateTime = new Date().toISOString(); 
+var Log = require('log'), log = new Log('debug', fs.createWriteStream('log-' + currentDateTime + '.log')), hits = new Log('debug', fs.createWriteStream('hints-' + currentDateTime + '.log')); 
 
 mongoose.connect('mongodb://aruggiero16:726915casa@ds025180.mlab.com:25180/prankusers')
 
