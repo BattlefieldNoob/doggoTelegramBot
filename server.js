@@ -1,12 +1,12 @@
 
-'use strict' 
-var shuffle = require('shuffle-array') 
- 
-var Telegram = require("node-telegram-bot-api") 
-var mongoose = require('mongoose'); 
-var fs = require('fs'); 
-var currentDateTime = new Date().toISOString(); 
-var Log = require('log'), log = new Log('debug', fs.createWriteStream('log-' + currentDateTime + '.log')), hits = new Log('debug', fs.createWriteStream('hints-' + currentDateTime + '.log')); 
+'use strict'
+var shuffle = require('shuffle-array')
+
+var Telegram = require("node-telegram-bot-api")
+var mongoose = require('mongoose');
+var fs = require('fs');
+var currentDateTime = new Date().toISOString();
+var Log = require('log'), log = new Log('debug', fs.createWriteStream('log-' + currentDateTime + '.log')), hits = new Log('debug', fs.createWriteStream('hints-' + currentDateTime + '.log'));
 
 mongoose.connect('mongodb://aruggiero16:726915casa@ds025180.mlab.com:25180/prankusers')
 
@@ -100,13 +100,13 @@ bot.on("message", function (msg) {
 })
 
 bot.onText(/\/start/, function (msg) {
-  if(!isGroup(msg)){
-  bot.sendMessage(msg.chat.id, "Welcome!", {
-    parse_mode: "Markdown",
-    reply_markup: replyKeyboardMain
-  })
-  sendMessageToMe("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Started Bot")
-  log.debug("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Started Bot");
+  if (!isGroup(msg)) {
+    bot.sendMessage(msg.chat.id, "Welcome!", {
+      parse_mode: "Markdown",
+      reply_markup: replyKeyboardMain
+    })
+    sendMessageToMe("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Started Bot")
+    log.debug("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Started Bot");
   }
 })
 
@@ -150,21 +150,16 @@ bot.on("photo", function (msg) {
 })
 
 var isGroup = function (msg) {
-  return msg.chat.type=="group"
+  return msg.chat.type == "group"
 }
 
 var showdoggo = function (msg) {
   shuffle(doggo_ids)
-  votetable[msg.from.id] = { doggo_id: doggo_ids[0].file_id }
-  var replyKeyboard = JSON.stringify({ "keyboard": [["\u{1F44D}"], ["\u{1F44E}"], ["/another"], ["/mainMenu"]] })
-  Entry.findOne({ file_id: votetable[msg.chat.id].doggo_id }).exec(function (err, doc) {
-    //se sono in un gruppo, non invio mai la tastiera e neanche il voto
-    if (isGroup(msg)) {
-      bot.sendPhoto(msg.chat.id, doggo_ids[0].file_id).then(message => {
-        console.log(message);
-        sendMessageToMe("Group " + msg.chat.title + " Requested an image")
-      })
-    } else {
+  if (!isGroup(msg)) {
+    votetable[msg.from.id] = { doggo_id: doggo_ids[0].file_id }
+    var replyKeyboard = JSON.stringify({ "keyboard": [["\u{1F44D}"], ["\u{1F44E}"], ["/another"], ["/mainMenu"]] })
+    Entry.findOne({ file_id: votetable[msg.chat.id].doggo_id }).exec(function (err, doc) {
+      //se sono in un gruppo, non invio mai la tastiera e neanche il voto
       bot.sendPhoto(msg.chat.id, doggo_ids[0].file_id, {
         caption: "Votes:" + doc.vote,
         parse_mode: "Markdown",
@@ -173,8 +168,16 @@ var showdoggo = function (msg) {
         console.log(message);
         sendMessageToMe("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Requested an image")
       })
-    }
-  })
+    })
+  } else {
+    Entry.findOne({ file_id: doggo_ids[0].file_id }).exec(function (err, doc) {
+      //se sono in un gruppo, non invio mai la tastiera e neanche il voto
+      bot.sendPhoto(msg.chat.id, doggo_ids[0].file_id).then(message => {
+        console.log(message);
+        sendMessageToMe("Group " + msg.chat.title + " Requested an image")
+      })
+    })
+  }
 }
 
 bot.onText(/\/uploadDoggo/, function (msg, match) {
@@ -244,5 +247,5 @@ bot.onText(/\/topdoggo/, function (msg, match) {
 })
 
 bot.onText(/\/donate/, function (msg, match) {
-  bot.sendMessage(msg.from.id, "Thank You! https://www.paypal.me/Ruggiero26/0.50")
+  bot.sendMessage(msg.chat.id, "Thank You! https://www.paypal.me/Ruggiero26/0.50")
 })
