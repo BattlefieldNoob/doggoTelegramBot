@@ -1,12 +1,4 @@
 
-'use strict'
-var shuffle = require('shuffle-array')
-
-var Telegram = require("node-telegram-bot-api")
-var mongoose = require('mongoose');
-var fs = require('fs');
-var currentDateTime = new Date().toISOString();
-var Log = require('log'), log = new Log('debug', fs.createWriteStream('log-' + currentDateTime + '.log')), hits = new Log('debug', fs.createWriteStream('hints-' + currentDateTime + '.log'));
 mongoose.connect('mongodb://aruggiero16:726915casa@ds025180.mlab.com:25180/prankusers')
 
 var Entry = mongoose.model('photos', { name: String, file_id: String, vote: Number });
@@ -111,11 +103,11 @@ bot.onText(/\/start/, function (msg) {
 
 
 bot.onText(/\/advices/, function (msg) {
-  bot.sendMessage(msg.chat.id, "Something wrong? or just an hint? Write here what you think about my job!", {
+  bot.sendMessage(msg.from.id, "Something wrong? or just an hint? Write here what you think about my job!", {
     parse_mode: "Markdown",
     reply_markup: JSON.stringify({ "keyboard": [["/cancel"]] })
   })
-  advicestable.push(msg.chat.id)
+  advicestable.push(msg.from.id)
   console.log(advicestable);
   log.debug("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Want to write an hint");
 })
@@ -125,7 +117,7 @@ bot.onText(/\/advices/, function (msg) {
 bot.on("photo", function (msg) {
   log.debug("User " + msg.from.id + " (" + msg.from.first_name + " " + msg.from.last_name + ") Uploaded an image");
   console.log(uploadtable)
-  if (uploadtable.indexOf(msg.chat.id) != -1) {
+  if (uploadtable.indexOf(msg.from.id) != -1) {
     doggo_ids.push(new Photo(msg.from.first_name, msg.photo[msg.photo.length - 1].file_id))
     log.debug("file_id=" + msg.photo[msg.photo.length - 1].file_id);
     var doggo = new Entry({ name: msg.from.first_name, file_id: msg.photo[msg.photo.length - 1].file_id, vote: 0 });
@@ -139,9 +131,9 @@ bot.on("photo", function (msg) {
         })
       }
     });
-    delete uploadtable[uploadtable.indexOf(msg.chat.id)]
+    delete uploadtable[uploadtable.indexOf(msg.from.id)]
     console.log(uploadtable);
-    bot.sendMessage(msg.chat.id, "Saved!", {
+    bot.sendMessage(msg.from.id, "Saved!", {
       parse_mode: "Markdown",
       reply_markup: replyKeyboardMain
     })
@@ -154,7 +146,7 @@ var isGroup = function (msg) {
 
 var showdoggo = function (msg) {
   shuffle(doggo_ids)
-  votetable[msg.chat.id] = { doggo_id: doggo_ids[0].file_id }
+  votetable[msg.from.id] = { doggo_id: doggo_ids[0].file_id }
   var replyKeyboard = JSON.stringify({ "keyboard": [["\u{1F44D}"], ["\u{1F44E}"], ["/another"], ["/mainMenu"]] })
   Entry.findOne({ file_id: votetable[msg.chat.id].doggo_id }).exec(function (err, doc) {
     //se sono in un gruppo, non invio mai la tastiera e neanche il voto
@@ -243,5 +235,5 @@ bot.onText(/\/topdoggo/, function (msg, match) {
 })
 
 bot.onText(/\/donate/, function (msg, match) {
-  bot.sendMessage(msg.chat.id, "Thank You! https://www.paypal.me/Ruggiero26/0.50")
+  bot.sendMessage(msg.from.id, "Thank You! https://www.paypal.me/Ruggiero26/0.50")
 })
