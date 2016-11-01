@@ -1,4 +1,6 @@
 
+"use strict";
+
 mongoose.connect('mongodb://aruggiero16:726915casa@ds025180.mlab.com:25180/prankusers')
 
 var Entry = mongoose.model('photos', { name: String, file_id: String, vote: Number });
