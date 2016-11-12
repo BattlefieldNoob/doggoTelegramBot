@@ -1,4 +1,4 @@
-
+'use strict'
 let fs = require('fs');
 let currentDateTime = new Date().toISOString();
 let Log = require('log'), log = new Log('debug', fs.createWriteStream('log-' + currentDateTime + '.log')), hits = new Log('debug', fs.createWriteStream('hints-' + currentDateTime + '.log'));

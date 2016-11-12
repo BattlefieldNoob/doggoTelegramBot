@@ -1,4 +1,4 @@
-
+'use strict'
 var shuffle = require('shuffle-array')
 
 class PhotoUtils {
