@@ -3,17 +3,31 @@ let fs = require('fs');
 let currentDateTime = new Date().toISOString();
 let Log = require('log'), log = new Log('debug', fs.createWriteStream('log-' + currentDateTime + '.log')), hits = new Log('debug', fs.createWriteStream('hints-' + currentDateTime + '.log'));
 
+var mongoose = require('mongoose');
+
+mongoose.connect('mongodb://aruggiero16:726915casa@ds025180.mlab.com:25180/prankusers') //ok
+//mongoose.connect('mongodb://aruggiero16:726915casa@ds036709.mlab.com:36709/unity_webgl_access') //test
+
+var Entry = mongoose.model('photos', { name: String, file_id: String, vote: Number });
+
+class Photo {
+    constructor(name, file_id) {
+        this.name = name
+        this.file_id = file_id
+    }
+}
+
+var doggo_ids=[]
+
 class DoggoBot {
-    constructor(botinstance, mongooseEntry, doggo_ids) {
+    constructor(botinstance) {
         this.myID = 67447150;
-        this.photos = require("./PhotoUtils.js").Instance(botinstance, mongooseEntry, doggo_ids, this)
-        this.text = require("./TextUtils.js").GetInstance(botinstance, this)
-        this.doggo_ids = doggo_ids
         this.votetable = {}
         this.uploadtable = []
         this.advicestable = []
         this.bot = botinstance
-        this.Entry = mongooseEntry
+        this.photos = require("./PhotoUtils.js").Instance(botinstance, Entry, doggo_ids, this)
+        this.text = require("./TextUtils.js").GetInstance(botinstance, this)
         this.replyKeyboardMain = JSON.stringify({ "keyboard": [["/showdoggo"], ["/topdoggo"], ["/uploadDoggo"], ["/donate", "/advices"]] })
         this.cancelKeyboard = JSON.stringify({ "keyboard": [["/cancel"]] })
         this.fnmap = {
@@ -21,17 +35,23 @@ class DoggoBot {
                 "/start": this._handleStartMessage,
                 "/showdoggo": this._handleShowDoggo,
                 "/another": this._handleShowDoggo,
-                "/top": this._handleTopDoggo,
-                "/mainmenu": this._handleMainMenu,
+                "/topdoggo": this._handleTopDoggo,
+                "/mainMenu": this._handleMainMenu,
                 "/advices": this._handleAdvices,
+                "/donate": this._handleDonate,
                 "/cancel": this._handleCancel,
                 "/uploadDoggo": this._handleUploadDoggo,
                 "\u{01F44D}": this._handleVoteUp,
                 "\u{01F44E}": this._handleVoteDown,
-                "":this._handleHintMessage
+                "": this._handleHintMessage
             },
             "photo": this._handleDoggoPhotoReceived
         }
+        Entry.find({}, function (err, photos) {
+            photos.forEach(function (elem) {
+                doggo_ids.push(new Photo(elem.name, elem.file_id))
+            })
+        })
 
         log.debug("Server is up!");
         console.log("Server is up!");
@@ -44,7 +64,7 @@ class DoggoBot {
         var data = this.fnmap[key]
         //console.log("key:"+key+" data:"+data)
         while (typeof data != 'function') {
-            key = Object.keys(data).find(akey => akey == msg[key] || akey=="")
+            key = Object.keys(data).find(akey => akey == msg[key] || akey == "")
             data = data[key]
             //console.log("key:"+key+" data:"+data)
         }
@@ -89,15 +109,14 @@ class DoggoBot {
 
     _handleCancel(msg, chatid, fromid, isGroup) {
         if (!isGroup) {
-            if (uploadtable.indexOf(chatid) != -1) {
+            if (this.uploadtable.indexOf(chatid) != -1) {
                 delete this.uploadtable[this.uploadtable.indexOf(chatid)]
                 console.log(this.uploadtable);
-                this.text.message(chatid, isGroup, "OK!", this.replyKeyboardMain)
-            } else if (advicestable.indexOf(chatid) != -1) {
+            } else if (this.advicestable.indexOf(chatid) != -1) {
                 delete this.advicestable[this.advicestable.indexOf(chatid)]
                 console.log(this.advicestable);
-                this.text.message(chatid, isGroup, "OK!", this.replyKeyboardMain)
             }
+            this.text.message(chatid, isGroup, "OK!", this.replyKeyboardMain)
         }
     }
 
@@ -135,25 +154,25 @@ class DoggoBot {
 
     _handleVoteUp(msg, chatid, fromid, isGroup) {
         if (chatid in this.votetable) {//mi aspetto la votazione
-            this.Entry.update({ file_id: this.votetable[chatid].doggo_id }, { $inc: { vote: 1 } }, function (err, affected) {
+            Entry.update({ file_id: this.votetable[chatid].doggo_id }, { $inc: { vote: 1 } }, function (err, affected) {
                 log.debug("vote increased");
                 delete this.votetable[chatid]
                 console.log(this.votetable)
                 this._handleShowDoggo(msg, chatid, fromid, isGroup)
                 this._sendMessageToMe("user " + msg.from.first_name + " increased vote to image " + this.votetable[chatid].doggo_id)
-            })
+            }.bind(this))
         }
     }
 
     _handleVoteDown(msg, chatid, fromid, isGroup) {
         if (chatid in this.votetable) {//mi aspetto la votazione
-            this.Entry.update({ file_id: this.votetable[chatid].doggo_id }, { $inc: { vote: -1 } }, function (err, affected) {
+            Entry.update({ file_id: this.votetable[chatid].doggo_id }, { $inc: { vote: -1 } }, function (err, affected) {
                 log.debug("vote decreased");
                 delete this.votetable[chatid]
                 console.log(this.votetable)
                 this._handleShowDoggo(msg, chatid, fromid, isGroup)
                 this._sendMessageToMe("user " + msg.from.first_name + " decreased vote to image " + this.votetable[chatid].doggo_id)
-            })
+            }.bind(this))
         }
     }
 
@@ -164,7 +183,7 @@ class DoggoBot {
                 console.log("User " + fromid + " (" + msg.from.first_name + ") Wrote an hint:" + msg.text);
                 delete this.advicestable[this.advicestable.indexOf(chatid)]
                 this._sendMessageToMe("user " + msg.from.first_name + " sent a hint")
-                this.text.message(fromid,isGroup,"Thank You!",this.replyKeyboardMain)
+                this.text.message(fromid, isGroup, "Thank You!", this.replyKeyboardMain)
             } else {
                 log.debug("Message :" + JSON.stringify(msg));
                 console.log("Message :" + JSON.stringify(msg));
@@ -181,6 +200,6 @@ class DoggoBot {
     }
 }
 
-module.exports.GetInstance = function (bot, mongooseEntry, doggo_ids) {
-    return new DoggoBot(bot, mongooseEntry, doggo_ids)
+module.exports.GetInstance = function (bot) {
+    return new DoggoBot(bot)
 }
